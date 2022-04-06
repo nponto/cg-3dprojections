@@ -26,7 +26,7 @@ function mat4x4Parallel(prp, srp, vup, clip) {
                
 
 
-    let cwValues = [((clip[0] + clip[1]) / 2), ((clip[2] + clip[3]) / 2), 1];
+    let cwValues = [((clip[0] + clip[1]) / 2), ((clip[2] + clip[3]) / 2), -clip[4]];
     let cw = new Vector(3); // is this right way to set vector?
     cw.values = cwValues;
     
@@ -62,7 +62,7 @@ function mat4x4Parallel(prp, srp, vup, clip) {
     
     let sparX = 2 / (clip[1] - clip[0]);
     let sparY = 2 / (clip[2] - clip[3]);
-    let sparZ = (1 / clip[5]);
+    let sparZ = (1 / (clip[5] - clip[4]));
 
     let Spar = new Matrix(4,4);
     Spar.values = [sparX, 0, 0, 0, 
@@ -79,6 +79,9 @@ function mat4x4Parallel(prp, srp, vup, clip) {
 
     return transform;
 }
+
+
+
 
 // create a 4x4 matrix to the perspective projection / view matrix
 function mat4x4Perspective(prp, srp, vup, clip) {
@@ -130,10 +133,12 @@ function mat4x4Perspective(prp, srp, vup, clip) {
     let Sperz = 1 / clip[5];
 
     let Sper = new Matrix(4,4);
-    Sper.values = [Sperx, 0, 0, 0,
-            0, Spery, 0, 0,
-            0, 0, Sperz, 0,
-            0, 0, 0, 1];
+    // Sper.values = [Sperx, 0, 0, 0,
+    //         0, Spery, 0, 0,
+    //         0, 0, Sperz, 0,
+    //         0, 0, 0, 1];
+
+    Sper.values = mat4x4Scale(Sper, Sperx, Spery, Sperz);
 
     // ...
     // let transform = Matrix.multiply([...]);
@@ -150,8 +155,8 @@ function mat4x4MPar() {
     // mpar.values = ...;
     mpar.values = [1, 0, 0, 0,
                     0, 1, 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 0]; // correct value for mpar????
+                    0, 0, 0, 0,
+                    0, 0, 1, 0]; // correct value for mpar????
     return mpar;
 }
 

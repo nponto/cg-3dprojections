@@ -216,17 +216,46 @@ function clipLinePerspective(line, z_min) {
 
     if ((out0 | out1) == 0) {
         // trivial accept, entire edge is inside of bounds, no clipping needed
+        return line;
     } else if ((out0 & out1) != 0) {
         // trivial deny, entire edge is outside of bounds, no clipping needed
-    } else {
+        return null;
+    } else if (out0 != 0) {
         // need to clip
+        if (out0 == LEFT) {
+            line.pt0.x = clip[0];
+        } else if (out0 == RIGHT) {
+            line.pt0.x = clip[1];
+        } else if (out0 == BOTTOM) {
+            line.pt0.y = clip[2];
+        } else if (out0 == TOP) {
+            line.pt0.y = clip[3];
+        } else if (out0 == NEAR) {
+            line.pt0.z = clip[4];
+        } else if (out0 == FAR) {
+            line.pt0.z = clip[5];
+        }
+    } else if (out1 != 0) {
+        if (out1 == LEFT) {
+            line.pt1.x = clip[0];
+        } else if (out1 == RIGHT) {
+            line.pt1.x = clip[1];
+        } else if (out1 == BOTTOM) {
+            line.pt1.y = clip[2];
+        } else if (out1 == TOP) {
+            line.pt1.y = clip[3];
+        } else if (out1 == NEAR) {
+            line.pt1.z = clip[4];
+        } else if (out1 == FAR) {
+            line.pt1.z = clip[5];
+        }
     }
 
 
     
     // TODO: implement clipping here!
     
-    return result;
+    return line;
 }
 
 // Called when user presses a key on the keyboard down 
