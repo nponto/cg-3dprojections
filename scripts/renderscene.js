@@ -87,12 +87,24 @@ function animate(timestamp) {
 function drawScene() {
     console.log(scene);
 
-    let nper = mat4x4Perspective(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip);
-    let mper = mat4x4MPer();
-    let finalmatrix = mper.mult(nper);
+    let finalmatrix;
 
-    //console.log(finalmatrix);
-    
+    if (scene.view.type == 'perspective') {
+        console.log('perspective');
+        let nper = mat4x4Perspective(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip);
+        let mper = mat4x4MPer();
+        finalmatrix = mper.mult(nper);
+
+    } else if (scene.view.type == 'parallel') {
+        console.log('parallel');
+        let npar = mat4x4Parallel(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip);
+        let mpar = mat4x4MPar();
+        finalmatrix = mpar.mult(npar);
+
+    }
+   
+
+    console.log(finalmatrix)    
     // TODO: implement drawing here!
     
 
