@@ -25,10 +25,10 @@ function init() {
     scene = {
         view: {
             type: 'perspective',
-            prp: Vector3(0, 10, -5),
-            srp: Vector3(20, 15, -40),
-            vup: Vector3(1, 1, 0),
-            clip: [-12, 6, -12, 6, 10, 100]
+            prp: Vector3(44, 20, -16),
+            srp: Vector3(20, 20, -40),
+            vup: Vector3(0, 1, 0),
+            clip: [-19, 5, -10, 8, 12, 100],
         },
         models: [
             {
@@ -85,7 +85,6 @@ function animate(timestamp) {
 
 // Main drawing code - use information contained in variable `scene`
 function drawScene() {
-    console.log(scene);
 
     let finalmatrix;
 
@@ -104,7 +103,6 @@ function drawScene() {
     }
    
 
-    console.log(finalmatrix)    
     // TODO: implement drawing here!
     
 
@@ -124,7 +122,7 @@ function drawScene() {
         for (let i = 0; i < vertices.length; i ++) {
             let product = finalmatrix.mult(vertices[i]);
             let final = [(product.values[0] / product.values[3]), (product.values[1] / product.values[3])];
-            let finalpoint = {x: (final[0] * 200 + 250), y: (final[1] * 200 + 300)}; // hard coded extra values to make it easier to see for now
+            let finalpoint = {x: (final[0] * (view.width/2) + 200), y: (final[1] * (view.height/2) + 300)}; // hard coded extra values to make it easier to see for now
             finalpoints.push(finalpoint);
         }
         //  * draw line
@@ -223,7 +221,9 @@ function clipLinePerspective(line, z_min) {
 
 // Called when user presses a key on the keyboard down 
 function onKeyDown(event) {
+    
     switch (event.keyCode) {
+        
         case 37: // LEFT Arrow
             console.log("left");
             break;
@@ -231,16 +231,53 @@ function onKeyDown(event) {
             console.log("right");
             break;
         case 65: // A key
+
+            n = scene.view.prp.subtract(scene.view.srp);
+            n.normalize();
+            u = scene.view.vup.cross(n);
+            u.normalize();
+            scene.view.prp = scene.view.prp.subtract(u);
+            scene.view.srp = scene.view.srp.subtract(u);
+
+            ctx.clearRect(0, 0, view.width, view.height);
+            drawScene();
             console.log("A");
             break;
         case 68: // D key
             console.log("D");
+
+            n = scene.view.prp.subtract(scene.view.srp);
+            n.normalize();
+            u = scene.view.vup.cross(n);
+            u.normalize();
+            scene.view.prp = scene.view.prp.add(u);
+            scene.view.srp = scene.view.srp.add(u);
+            ctx.clearRect(0, 0, view.width, view.height);
+            drawScene();
             break;
         case 83: // S key
             console.log("S");
+
+            n = scene.view.prp.subtract(scene.view.srp);
+            n.normalize();
+            u = scene.view.vup.cross(n);
+            u.normalize();
+            scene.view.prp = scene.view.prp.subtract(n);
+            scene.view.srp = scene.view.srp.subtract(n);
+            ctx.clearRect(0, 0, view.width, view.height);
+            drawScene();
             break;
         case 87: // W key
             console.log("W");
+
+            n = scene.view.prp.subtract(scene.view.srp);
+            n.normalize();
+            u = scene.view.vup.cross(n);
+            u.normalize();
+            scene.view.prp = scene.view.prp.add(n);
+            scene.view.srp = scene.view.srp.add(n);
+            ctx.clearRect(0, 0, view.width, view.height);
+            drawScene();
             break;
     }
 }
