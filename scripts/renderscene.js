@@ -213,6 +213,16 @@ function clipLinePerspective(line, z_min) {
     let p1 = Vector3(line.pt1.x, line.pt1.y, line.pt1.z);
     let out0 = outcodePerspective(p0, z_min);
     let out1 = outcodePerspective(p1, z_min);
+
+    if ((out0 | out1) == 0) {
+        // trivial accept, entire edge is inside of bounds, no clipping needed
+    } else if ((out0 & out1) != 0) {
+        // trivial deny, entire edge is outside of bounds, no clipping needed
+    } else {
+        // need to clip
+    }
+
+
     
     // TODO: implement clipping here!
     
@@ -226,9 +236,29 @@ function onKeyDown(event) {
         
         case 37: // LEFT Arrow
             console.log("left");
+            n = scene.view.prp.subtract(scene.view.srp);
+            n.normalize();
+            u = scene.view.vup.cross(n);
+            u.normalize();
+            v = n.cross(u);
+            //scene.view.prp = scene.view.prp.subtract(n);
+            scene.view.srp = scene.view.srp.subtract(u);
+
+            ctx.clearRect(0, 0, view.width, view.height);
+            drawScene();
             break;
         case 39: // RIGHT Arrow
             console.log("right");
+            n = scene.view.prp.subtract(scene.view.srp);
+            n.normalize();
+            u = scene.view.vup.cross(n);
+            u.normalize();
+            v = n.cross(u);
+            //scene.view.prp = scene.view.prp.add(n);
+            scene.view.srp = scene.view.srp.add(u);
+
+            ctx.clearRect(0, 0, view.width, view.height);
+            drawScene();
             break;
         case 65: // A key
 
