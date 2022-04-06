@@ -93,9 +93,9 @@ function mat4x4Perspective(prp, srp, vup, clip) {
     u.normalize();
     let v = n.cross(u);
 
-    console.log(u);
-    console.log(v);
-    console.log(n);
+    //console.log(u);
+    //console.log(v);
+    //console.log(n);
 
     let rMatrix = new Matrix(4, 4);
     rMatrix.values = [u.x, u.y, u.z, 0,
@@ -129,8 +129,8 @@ function mat4x4Perspective(prp, srp, vup, clip) {
     let shxPar = (-1 * dop.x) / dop.z;
     let shyPar = (-1 * dop.y) / dop.z;
 
-    console.log(shxPar);
-    console.log(shyPar);
+    //console.log(shxPar);
+    //console.log(shyPar);
 
     let SHpar = new Matrix(4,4);
     SHpar.values = [1, 0, shxPar, 0,
@@ -153,14 +153,14 @@ function mat4x4Perspective(prp, srp, vup, clip) {
     // ...
     // let transform = Matrix.multiply([...]);
 
-    console.log(originMatrix);
-    console.log(rMatrix);
-    console.log(SHpar);
-    console.log(Sper);
+    //console.log(originMatrix);
+    //console.log(rMatrix);
+    //console.log(SHpar);
+    //console.log(Sper);
 
     let transform = Matrix.multiply([Sper, SHpar, rMatrix, originMatrix]);
 
-    console.log(transform);
+    //console.log(transform);
 
     // return transform;
 
@@ -171,6 +171,10 @@ function mat4x4Perspective(prp, srp, vup, clip) {
 function mat4x4MPar() {
     let mpar = new Matrix(4, 4);
     // mpar.values = ...;
+    mpar.values = [1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 0]; // correct value for mpar????
     return mpar;
 }
 
@@ -178,6 +182,10 @@ function mat4x4MPar() {
 function mat4x4MPer() {
     let mper = new Matrix(4, 4);
     // mper.values = ...;
+    mper.values = [1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, -1, 0];
     return mper;
 }
 

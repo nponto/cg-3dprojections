@@ -25,10 +25,10 @@ function init() {
     scene = {
         view: {
             type: 'perspective',
-            prp: Vector3(44, 20, -16),
-            srp: Vector3(20, 20, -40),
-            vup: Vector3(0, 1, 0),
-            clip: [-19, 5, -10, 8, 12, 100]
+            prp: Vector3(0, 10, -5),
+            srp: Vector3(20, 15, -40),
+            vup: Vector3(1, 1, 0),
+            clip: [-12, 6, -12, 6, 10, 100]
         },
         models: [
             {
@@ -86,32 +86,53 @@ function animate(timestamp) {
 // Main drawing code - use information contained in variable `scene`
 function drawScene() {
     console.log(scene);
-    console.log("drawScene is called");
 
+    let nper = mat4x4Perspective(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip);
+    let mper = mat4x4MPer();
+    let finalmatrix = mper.mult(nper);
 
-    let prpValues = [0, 10, -5];
-    let prp = new Vector(3);
-    prp.values = prpValues;
-
-    let srpValues = [20, 15, -40];
-    let srp = new Vector(3);
-    srp.values = srpValues;
-
-    let vupValues = [1, 1, 0];
-    let vup = new Vector(3);
-    vup.values = vupValues;
-
-    let clip= [-12, 6, -12, 6, 10, 100];
-    let matrix = mat4x4Perspective(prp, srp, vup, clip);
-
-    console.log(matrix);
+    //console.log(finalmatrix);
     
     // TODO: implement drawing here!
+    
+
+    let models = scene.models;
+    
+    let finalpoints = [];
+
     // For each model, for each edge
-    //  * transform to canonical view volume
-    //  * clip in 3D
-    //  * project to 2D
-    //  * draw line
+    for (let i = 0; i < models.length; i ++) {
+        // each model
+        let vertices = models[i].vertices;
+        let edges = models[i].edges;
+
+        //  * transform to canonical view volume (this is done, i believe)
+        //  * clip in 3D (has to be done using the sutherland algo)
+        //  * project to 2D (hard coded currently to fit on the screen)
+        for (let i = 0; i < vertices.length; i ++) {
+            let product = finalmatrix.mult(vertices[i]);
+            let final = [(product.values[0] / product.values[3]), (product.values[1] / product.values[3])];
+            let finalpoint = {x: (final[0] * 200 + 250), y: (final[1] * 200 + 300)}; // hard coded extra values to make it easier to see for now
+            finalpoints.push(finalpoint);
+        }
+        //  * draw line
+        for (let j = 0; j < edges.length; j++) {
+            // each set of edges
+            for (let k = 0; k < edges[j].length; k++) {
+                // each individual vertice in the list of edges
+                if (k == edges[j].length-1) {
+                    drawLine(finalpoints[edges[j][edges[j].length-1]].x, finalpoints[edges[j][edges[j].length-1]].y, finalpoints[edges[j][0]].x, finalpoints[edges[j][0]].y);
+                } else {
+                    drawLine(finalpoints[edges[j][k]].x, finalpoints[edges[j][k]].y, finalpoints[edges[j][k+1]].x, finalpoints[edges[j][k+1]].y);
+
+                }
+            }
+        }
+    }
+
+
+    
+    
 }
 
 // Get outcode for vertex (parallel view volume)
