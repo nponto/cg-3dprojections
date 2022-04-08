@@ -118,11 +118,11 @@ function drawScene() {
 
         //  * transform to canonical view volume (this is done, i believe)
         //  * clip in 3D (has to be done using the sutherland algo)
-        if (scene.view.type == 'perspective') {
+        /*if (scene.view.type == 'perspective') {
             edges[i] = clipLinePerspective(edges[i]);
         } else {
             edges[i] = clipLineParallel(edges[i]);
-        }    
+        } */   
         //  * project to 2D (hard coded currently to fit on the screen)
         for (let i = 0; i < vertices.length; i ++) {
             let product = finalmatrix.mult(vertices[i]);
@@ -218,7 +218,8 @@ function clipLinePerspective(line, z_min) {
     let p1 = Vector3(line.pt1.x, line.pt1.y, line.pt1.z);
     let out0 = outcodePerspective(p0, z_min);
     let out1 = outcodePerspective(p1, z_min);
-    let x, y, z;
+    let x, y, z, t;
+    let out;
 
     if (out0 == 0 && out1 == 0) {
         // trivial accept, entire edge is inside of bounds, no clipping needed
@@ -228,33 +229,119 @@ function clipLinePerspective(line, z_min) {
         return null;
     } else if ((out0 & out1) == 0 && out0 == 0 || out1 == 0) {
         // need to clip
-        if (out0 == LEFT) {
-            y = line.pt0.y + (line.pt1.y - line.pt0.y) * (clip[0] - line.pt0.x) / (line.pt1.x - line.pt0.x); 
-            x = clip[0]; 
-        } else if (out0 == RIGHT) {
-            line.pt0.x = clip[1];
-        } else if (out0 == BOTTOM) {
-            line.pt0.y = clip[2];
-        } else if (out0 == TOP) {
-            line.pt0.y = clip[3];
-        } else if (out0 == NEAR) {
-            line.pt0.z = clip[4];
-        } else if (out0 == FAR) {
-            line.pt0.z = clip[5];
+        if (out0 != 0) {
+            if (out0 == LEFT) {
+                t = (-line.pt0.x + line.pt0.z) / (Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.x;
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = clip[0];
+                line.pt0.x = x;
+                line.pt0.y = y;
+                line.pt0.z = z; 
+                return line;
+            } else if (out0 == RIGHT) {
+                t = (line.pt0.x + line.pt0.z) / (-Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.x;
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = clip[1];
+                line.pt0.x = x;
+                line.pt0.y = y;
+                line.pt0.z = z; 
+                return line;
+            } else if (out0 == BOTTOM) {
+                t = (-line.pt0.y + line.pt0.z) / (Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
+                y = clip[2];
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                line.pt0.x = x;
+                line.pt0.y = y;
+                line.pt0.z = z; 
+                return line;
+            } else if (out0 == TOP) {
+                t = (line.pt0.y + line.pt0.z) / (-Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
+                y = clip[3];
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                line.pt0.x = x;
+                line.pt0.y = y;
+                line.pt0.z = z; 
+                return line;
+            } else if (out0 == NEAR) {
+                t = (line.pt0.z - z_min) / (-Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;;
+                z = clip[4];
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                line.pt0.x = x;
+                line.pt0.y = y;
+                line.pt0.z = z; 
+                return line;
+            } else if (out0 == FAR) {
+                t = (-line.pt0.z - 1) / (Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;;
+                z = clip[4];
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                line.pt0.x = x;
+                line.pt0.y = y;
+                line.pt0.z = z; 
+                return line;
+            }
         }
-    } else if (out1 != 0) {
-        if (out1 == LEFT) {
-            line.pt1.x = clip[0];
-        } else if (out1 == RIGHT) {
-            line.pt1.x = clip[1];
-        } else if (out1 == BOTTOM) {
-            line.pt1.y = clip[2];
-        } else if (out1 == TOP) {
-            line.pt1.y = clip[3];
-        } else if (out1 == NEAR) {
-            line.pt1.z = clip[4];
-        } else if (out1 == FAR) {
-            line.pt1.z = clip[5];
+        else if (out1 != 0) {
+            if (out1 == LEFT) {
+                t = (-line.pt0.x + line.pt0.z) / (Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.x;
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = clip[0];
+                line.pt1.x = x;
+                line.pt1.y = y;
+                line.pt1.z = z; 
+                return line;
+            } else if (out1 == RIGHT) {
+                t = (line.pt0.x + line.pt0.z) / (-Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.x;
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = clip[1];
+                line.pt1.x = x;
+                line.pt1.y = y;
+                line.pt1.z = z;
+                return line;
+            } else if (out1 == BOTTOM) {
+                t = (-line.pt0.y + line.pt0.z) / (Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
+                y = clip[2];
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                line.pt1.x = x;
+                line.pt1.y = y;
+                line.pt1.z = z;
+                return line;
+            } else if (out1 == TOP) {
+                t = (line.pt0.y + line.pt0.z) / (-Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
+                y = clip[3];
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                line.pt1.x = x;
+                line.pt1.y = y;
+                line.pt1.z = z;
+                return line;
+            } else if (out1 == NEAR) {
+                t = (line.pt0.z - z_min) / (-Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;;
+                z = clip[4];
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                line.pt1.x = x;
+                line.pt1.y = y;
+                line.pt1.z = z; 
+                return line;
+            } else if (out1 == FAR) {
+                t = (-line.pt0.z - 1) / (Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;;
+                z = clip[4];
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                line.pt1.x = x;
+                line.pt1.y = y;
+                line.pt1.z = z;
+                return line;
+            }
         }
     }
 
