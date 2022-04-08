@@ -86,19 +86,21 @@ function animate(timestamp) {
 // Main drawing code - use information contained in variable `scene`
 function drawScene() {
 
-    let finalmatrix;
+    let canonicalViewMatrix;
+    let projectionMatrix; 
+
 
     if (scene.view.type == 'perspective') {
-        console.log('perspective');
-        let nper = mat4x4Perspective(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip);
-        let mper = mat4x4MPer();
-        finalmatrix = mper.mult(nper);
+        //console.log('perspective');
+        canonicalViewMatrix = mat4x4Perspective(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip);
+        projectionMatrix = mat4x4MPer();
+        //finalmatrix = mper.mult(nper);
 
     } else if (scene.view.type == 'parallel') {
-        console.log('parallel');
-        let npar = mat4x4Parallel(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip);
-        let mpar = mat4x4MPar();
-        finalmatrix = mpar.mult(npar);
+        //console.log('parallel');
+        canonicalViewMatrix = mat4x4Parallel(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip);
+        projectionMatrix = mat4x4MPar();
+        //finalmatrix = mpar.mult(npar);
 
     }
    
@@ -119,15 +121,56 @@ function drawScene() {
         //  * transform to canonical view volume (this is done, i believe)
         //  * clip in 3D (has to be done using the sutherland algo)
         /*if (scene.view.type == 'perspective') {
+            console.log(edges[i]);
             edges[i] = clipLinePerspective(edges[i]);
         } else {
             edges[i] = clipLineParallel(edges[i]);
-        } */   
-        //  * project to 2D (hard coded currently to fit on the screen)
+        }   */
+
+        let verticesList = [];
+        
+
         for (let i = 0; i < vertices.length; i ++) {
+            verticesList.push(Matrix.multiply([canonicalViewMatrix, vertices[i]]));
+        }
+
+        // clip here, then project to 2d
+
+        for (let j = 0; j < edges.length; j++) {
+            // each set of edges
+            for (let k = 0; k < edges[j].length-1; k++) {
+                // each individual vertice in the list of edges
+                /*if (k == edges[j].length-1) {
+                    drawLine(finalpoints[edges[j][edges[j].length-1]].x, finalpoints[edges[j][edges[j].length-1]].y, finalpoints[edges[j][0]].x, finalpoints[edges[j][0]].y);
+                } else {
+                    drawLine(finalpoints[edges[j][k]].x, finalpoints[edges[j][k]].y, finalpoints[edges[j][k+1]].x, finalpoints[edges[j][k+1]].y);
+
+                }*/
+                let p0 = verticesList[edges[j][k]];
+                let p1 = verticesList[edges[j][k+1]];
+
+                let line = {pt0: p0, pt1: p1};
+                 
+                // todo add clipping here
+
+                let p02d = Matrix.multiply([projectionMatrix, line.pt0]); // put V in here
+                let p12d = Matrix.multiply([projectionMatrix, line.pt1]); // put V in here
+
+
+                p02d.x = p02d.x / p02d.w;
+                p12d.x = p12d.x / p12d.w;
+                p02d.y = p02d.y / p02d.w;
+                p12d.y = p12d.y / p12d.w;
+                drawLine((p02d.x + 1) * view.width/2, (p02d.y + 1) * view.height/2, (p12d.x + 1) * view.width/2, (p12d.y +1) * view.height/2);
+
+            }
+        }
+
+        //  * project to 2D (hard coded currently to fit on the screen)
+        /*for (let i = 0; i < vertices.length; i ++) {
             let product = finalmatrix.mult(vertices[i]);
             let final = [(product.values[0] / product.values[3]), (product.values[1] / product.values[3])];
-            let finalpoint = {x: (final[0] * (view.width/2) + 200), y: (final[1] * (view.height/2) + 300)}; // hard coded extra values to make it easier to see for now
+            let finalpoint = {x: (final[0] * (view.width/2) + view.width/2), y: (final[1] * (view.height/2) + view.height/2)}; // hard coded extra values to make it easier to see for now
             finalpoints.push(finalpoint);
         }
         //  * draw line
@@ -142,7 +185,7 @@ function drawScene() {
 
                 }
             }
-        }
+        }*/
     }
 
 
@@ -223,14 +266,17 @@ function clipLinePerspective(line, z_min) {
 
     if (out0 == 0 && out1 == 0) {
         // trivial accept, entire edge is inside of bounds, no clipping needed
+        console.log("clipping if");
         return line;
     } else if ((out0 & out1) != 0) {
         // trivial deny, entire edge is outside of bounds, no clipping needed
+        console.log("clipping else if");
         return null;
     } else if ((out0 & out1) == 0 && out0 == 0 || out1 == 0) {
+        console.log("clipping else");
         // need to clip
         if (out0 != 0) {
-            if (out0 == LEFT) {
+            if (out0 & LEFT) {
                 t = (-line.pt0.x + line.pt0.z) / (Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
                 y = (1-t) * line.pt0.y + t * line.pt1.x;
                 z = (1-t) * line.pt0.z + t * line.pt1.z;
@@ -239,7 +285,7 @@ function clipLinePerspective(line, z_min) {
                 line.pt0.y = y;
                 line.pt0.z = z; 
                 return line;
-            } else if (out0 == RIGHT) {
+            } else if (out0 & RIGHT) {
                 t = (line.pt0.x + line.pt0.z) / (-Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
                 y = (1-t) * line.pt0.y + t * line.pt1.x;
                 z = (1-t) * line.pt0.z + t * line.pt1.z;
@@ -248,7 +294,7 @@ function clipLinePerspective(line, z_min) {
                 line.pt0.y = y;
                 line.pt0.z = z; 
                 return line;
-            } else if (out0 == BOTTOM) {
+            } else if (out0 & BOTTOM) {
                 t = (-line.pt0.y + line.pt0.z) / (Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
                 y = clip[2];
                 z = (1-t) * line.pt0.z + t * line.pt1.z;
@@ -257,7 +303,7 @@ function clipLinePerspective(line, z_min) {
                 line.pt0.y = y;
                 line.pt0.z = z; 
                 return line;
-            } else if (out0 == TOP) {
+            } else if (out0 & TOP) {
                 t = (line.pt0.y + line.pt0.z) / (-Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
                 y = clip[3];
                 z = (1-t) * line.pt0.z + t * line.pt1.z;
@@ -266,7 +312,7 @@ function clipLinePerspective(line, z_min) {
                 line.pt0.y = y;
                 line.pt0.z = z; 
                 return line;
-            } else if (out0 == NEAR) {
+            } else if (out0 & NEAR) {
                 t = (line.pt0.z - z_min) / (-Math.abs(line.pt0.z - line.pt1.z));
                 y = (1-t) * line.pt0.y + t * line.pt1.y;;
                 z = clip[4];
@@ -275,7 +321,7 @@ function clipLinePerspective(line, z_min) {
                 line.pt0.y = y;
                 line.pt0.z = z; 
                 return line;
-            } else if (out0 == FAR) {
+            } else if (out0 & FAR) {
                 t = (-line.pt0.z - 1) / (Math.abs(line.pt0.z - line.pt1.z));
                 y = (1-t) * line.pt0.y + t * line.pt1.y;;
                 z = clip[4];
@@ -287,7 +333,7 @@ function clipLinePerspective(line, z_min) {
             }
         }
         else if (out1 != 0) {
-            if (out1 == LEFT) {
+            if (out1 & LEFT) {
                 t = (-line.pt0.x + line.pt0.z) / (Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
                 y = (1-t) * line.pt0.y + t * line.pt1.x;
                 z = (1-t) * line.pt0.z + t * line.pt1.z;
@@ -296,7 +342,7 @@ function clipLinePerspective(line, z_min) {
                 line.pt1.y = y;
                 line.pt1.z = z; 
                 return line;
-            } else if (out1 == RIGHT) {
+            } else if (out1 & RIGHT) {
                 t = (line.pt0.x + line.pt0.z) / (-Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
                 y = (1-t) * line.pt0.y + t * line.pt1.x;
                 z = (1-t) * line.pt0.z + t * line.pt1.z;
@@ -305,7 +351,7 @@ function clipLinePerspective(line, z_min) {
                 line.pt1.y = y;
                 line.pt1.z = z;
                 return line;
-            } else if (out1 == BOTTOM) {
+            } else if (out1 & BOTTOM) {
                 t = (-line.pt0.y + line.pt0.z) / (Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
                 y = clip[2];
                 z = (1-t) * line.pt0.z + t * line.pt1.z;
@@ -314,7 +360,7 @@ function clipLinePerspective(line, z_min) {
                 line.pt1.y = y;
                 line.pt1.z = z;
                 return line;
-            } else if (out1 == TOP) {
+            } else if (out1 & TOP) {
                 t = (line.pt0.y + line.pt0.z) / (-Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
                 y = clip[3];
                 z = (1-t) * line.pt0.z + t * line.pt1.z;
@@ -323,7 +369,7 @@ function clipLinePerspective(line, z_min) {
                 line.pt1.y = y;
                 line.pt1.z = z;
                 return line;
-            } else if (out1 == NEAR) {
+            } else if (out1 & NEAR) {
                 t = (line.pt0.z - z_min) / (-Math.abs(line.pt0.z - line.pt1.z));
                 y = (1-t) * line.pt0.y + t * line.pt1.y;;
                 z = clip[4];
@@ -332,7 +378,7 @@ function clipLinePerspective(line, z_min) {
                 line.pt1.y = y;
                 line.pt1.z = z; 
                 return line;
-            } else if (out1 == FAR) {
+            } else if (out1 & FAR) {
                 t = (-line.pt0.z - 1) / (Math.abs(line.pt0.z - line.pt1.z));
                 y = (1-t) * line.pt0.y + t * line.pt1.y;;
                 z = clip[4];
