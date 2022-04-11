@@ -103,6 +103,19 @@ function drawScene() {
         //finalmatrix = mpar.mult(npar);
 
     }
+
+    if (scene.models.type == 'generic') {
+        // draw generic
+    } else if (scene.models.type == 'cube') {
+        drawCube(scene.models.center, scene.models.width, scene.models.height, scene.models.depth);
+
+    } else if (scene.models.type == 'cone') {
+        
+    } else if (scene.models.type == 'cylinder') {
+
+    } else if (scene.models.type == 'sphere') {
+
+    }
    
 
     // TODO: implement drawing here!
@@ -194,6 +207,40 @@ function drawScene() {
     
     
 }
+// function to set edges, vertices for a cube model
+function drawCube(center, width, height, depth) {
+
+    let vertices = [];
+    let edges = [];
+    let x = center[0];
+    let y = center[1];
+    let z = center[2];
+    halfheight = height/2;
+    halfwidth = width/2;
+    halfdepth = depth/2;
+
+    vertices.push(Vector4((x - halfwidth), (y - halfheight), (z - halfdepth))); // not quite right way to subtract, i think?
+    vertices.push(Vector4((x - halfwidth), (y - halfheight), (z + halfdepth)));
+    vertices.push(Vector4((x - halfwidth), (y + halfheight), (z - halfdepth)));
+    vertices.push(Vector4((x - halfwidth), (y + halfheight), (z + halfdepth)));
+    vertices.push(Vector4((x + halfwidth), (y - halfheight), (z - halfdepth)));
+    vertices.push(Vector4((x + halfwidth), (y - halfheight), (z + halfdepth)));
+    vertices.push(Vector4((x + halfwidth), (y + halfheight), (z - halfdepth)));
+    vertices.push(Vector4((x + halfwidth), (y + halfheight), (z + halfdepth)));
+
+    edges.push([0, 1, 2, 3]);
+    edges.push([4, 5, 6, 7]);
+    edges.push([0, 4]);
+    edges.push([3, 7]);
+    edges.push([1, 5]);
+    edges.push([2, 6]);
+
+    drawScene(); // need helper function?
+
+}
+
+
+
 
 // Get outcode for vertex (parallel view volume)
 function outcodeParallel(vertex) {
