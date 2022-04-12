@@ -164,19 +164,24 @@ function drawScene() {
                 let p1 = verticesList[edges[j][k+1]];
 
                 let line = {pt0: p0, pt1: p1};
-                 
+                let newLine = line;
+
                 // todo add clipping here
-                line = clipLinePerspective(line, scene.view.clip[4]);
+                newLine = clipLinePerspective(line, -1*(scene.view.clip[4]/scene.view.clip[5]));
+                //newLine = clipLineParallel(line);
+                if (newLine != null) {
+                    let p02d = Matrix.multiply([projectionMatrix, newLine.pt0]); // put V in here
+                    let p12d = Matrix.multiply([projectionMatrix, newLine.pt1]); // put V in here
 
-                let p02d = Matrix.multiply([projectionMatrix, line.pt0]); // put V in here
-                let p12d = Matrix.multiply([projectionMatrix, line.pt1]); // put V in here
 
-
-                p02d.x = p02d.x / p02d.w;
-                p12d.x = p12d.x / p12d.w;
-                p02d.y = p02d.y / p02d.w;
-                p12d.y = p12d.y / p12d.w;
-                drawLine((p02d.x + 1) * view.width/2, (p02d.y + 1) * view.height/2, (p12d.x + 1) * view.width/2, (p12d.y +1) * view.height/2);
+                    p02d.x = p02d.x / p02d.w;
+                    p12d.x = p12d.x / p12d.w;
+                    p02d.y = p02d.y / p02d.w;
+                    p12d.y = p12d.y / p12d.w;
+                    drawLine((p02d.x + 1) * view.width/2, (p02d.y + 1) * view.height/2, (p12d.x + 1) * view.width/2, (p12d.y +1) * view.height/2);
+                }
+                
+                
 
             }
         }
@@ -292,24 +297,11 @@ function outcodePerspective(vertex, z_min) {
 
 // Clip line - should either return a new line (with two endpoints inside view volume) or null (if line is completely outside view volume)
 function clipLineParallel(line) {
-    let result = null;
+    let result = line;
     let p0 = Vector3(line.pt0.x, line.pt0.y, line.pt0.z); 
     let p1 = Vector3(line.pt1.x, line.pt1.y, line.pt1.z);
     let out0 = outcodeParallel(p0);
     let out1 = outcodeParallel(p1);
-    
-    // TODO: implement clipping here!
-    
-    return result;
-}
-
-// Clip line - should either return a new line (with two endpoints inside view volume) or null (if line is completely outside view volume)
-function clipLinePerspective(line, z_min) {
-    let result = line;
-    let p0 = Vector3(line.pt0.x, line.pt0.y, line.pt0.z); 
-    let p1 = Vector3(line.pt1.x, line.pt1.y, line.pt1.z);
-    let out0 = outcodePerspective(p0, z_min);
-    let out1 = outcodePerspective(p1, z_min);
     let x, y, z, t;
     let out;
 
@@ -320,7 +312,7 @@ function clipLinePerspective(line, z_min) {
     } else if ((out0 & out1) != 0) {
         // trivial deny, entire edge is outside of bounds, no clipping needed
         console.log("clipping else if");
-        return line;
+        return null;
     } else if ((out0 & out1) == 0 && out0 == 0 || out1 == 0) {
         console.log("clipping else");
         // need to clip
@@ -431,6 +423,144 @@ function clipLinePerspective(line, z_min) {
                 t = (-line.pt0.z - 1) / (Math.abs(line.pt0.z - line.pt1.z));
                 y = (1-t) * line.pt0.y + t * line.pt1.y;;
                 z = scene.view.clip[5];
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                result.pt1.x = x;
+                result.pt1.y = y;
+                result.pt1.z = z;
+                return result;
+            }
+        }
+    }
+    return result;
+}
+
+// Clip line - should either return a new line (with two endpoints inside view volume) or null (if line is completely outside view volume)
+function clipLinePerspective(line, z_min) {
+    let result = line;
+    let p0 = Vector3(line.pt0.x, line.pt0.y, line.pt0.z); 
+    let p1 = Vector3(line.pt1.x, line.pt1.y, line.pt1.z);
+    let out0 = outcodePerspective(p0, z_min);
+    let out1 = outcodePerspective(p1, z_min);
+    let x, y, z, t;
+
+    if (out0 == 0 && out1 == 0) {
+        // trivial accept, entire edge is inside of bounds, no clipping needed
+        console.log("clipping if");
+        return result;
+    } else if ((out0 & out1) != 0) {
+        // trivial deny, entire edge is outside of bounds, no clipping needed
+        console.log("clipping else if");
+        return null;
+    } else if ((out0 & out1) == 0 && out0 == 0 || out1 == 0) {
+        console.log("clipping else");
+        // need to clip
+        if (out0 != 0) {
+            if (out0 & LEFT) {
+                t = (-1*(line.pt0.x) + line.pt0.z) / (Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = z;//scene.view.clip[0];
+                result.pt0.x = x;
+                result.pt0.y = y;
+                result.pt0.z = z; 
+                return line;
+            } else if (out0 & RIGHT) {
+                t = (line.pt0.x + line.pt0.z) / (-Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = -z;//scene.view.clip[1];
+                result.pt0.x = x;
+                result.pt0.y = y;
+                result.pt0.z = z; 
+                return result;
+            } else if (out0 & BOTTOM) {
+                t = (-line.pt0.y + line.pt0.z) / (Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
+                y = z;//scene.view.clip[2];
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                result.pt0.x = x;
+                result.pt0.y = y;
+                result.pt0.z = z; 
+                return result;
+            } else if (out0 & TOP) {
+                t = (line.pt0.y + line.pt0.z) / (-Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
+                y = -z;//scene.view.clip[3];
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                result.pt0.x = x;
+                result.pt0.y = y;
+                result.pt0.z = z; 
+                return result;
+            } else if (out0 & NEAR) {
+                t = (line.pt0.z - z_min) / (-Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;
+                z = z_min;//scene.view.clip[4];
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                result.pt0.x = x;
+                result.pt0.y = y;
+                result.pt0.z = z; 
+                return result;
+            } else if (out0 & FAR) {
+                t = (-line.pt0.z - 1) / (Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;;
+                z = -1;//scene.view.clip[5];
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                result.pt0.x = x;
+                result.pt0.y = y;
+                result.pt0.z = z; 
+                return result;
+            }
+        }
+        else if (out1 != 0) {
+            if (out1 & LEFT) {
+                t = (-line.pt0.x + line.pt0.z) / (Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = z;//scene.view.clip[0];
+                result.pt1.x = x;
+                result.pt1.y = y;
+                result.pt1.z = z; 
+                return result;
+            } else if (out1 & RIGHT) {
+                t = (line.pt0.x + line.pt0.z) / (-Math.abs(line.pt0.x - line.pt1.x) - Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = -z;//scene.view.clip[1];
+                result.pt1.x = x;
+                result.pt1.y = y;
+                result.pt1.z = z;
+                return result;
+            } else if (out1 & BOTTOM) {
+                t = (-line.pt0.y + line.pt0.z) / (Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
+                y = z;//scene.view.clip[2];
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                result.pt1.x = x;
+                result.pt1.y = y;
+                result.pt1.z = z;
+                return result;
+            } else if (out1 & TOP) {
+                t = (line.pt0.y + line.pt0.z) / (-Math.abs(line.pt0.y - line.pt1.y) - Math.abs(line.pt0.z - line.pt1.z));
+                y = -z;//scene.view.clip[3];
+                z = (1-t) * line.pt0.z + t * line.pt1.z;
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                result.pt1.x = x;
+                result.pt1.y = y;
+                result.pt1.z = z;
+                return result;
+            } else if (out1 & NEAR) {
+                t = (line.pt0.z - z_min) / (-Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;
+                z = z_min;//scene.view.clip[4];
+                x = (1-t) * line.pt0.x + t * line.pt1.x;
+                result.pt1.x = x;
+                result.pt1.y = y;
+                result.pt1.z = z; 
+                return result;
+            } else if (out1 & FAR) {
+                t = (-line.pt0.z - 1) / (Math.abs(line.pt0.z - line.pt1.z));
+                y = (1-t) * line.pt0.y + t * line.pt1.y;
+                z = -1;//scene.view.clip[5];
                 x = (1-t) * line.pt0.x + t * line.pt1.x;
                 result.pt1.x = x;
                 result.pt1.y = y;
