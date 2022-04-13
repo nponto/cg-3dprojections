@@ -55,7 +55,37 @@ function init() {
                     [4, 9]
                 ],
                 matrix: new Matrix(4, 4)
-            }
+            },
+            {
+                type: 'cone',
+                center: [10, 10, -30],
+                radius: 10,
+                height: 20,
+                sides: 10,
+            },
+            {
+                type: 'cube',
+                center: [4, 4, -10],
+                width: 8,
+                height: 8,
+                depth: 8,
+            },
+            {
+                type: 'sphere',
+                center: [10, 10, -20],
+                radius: 10,
+                slices: 12,
+                stacks: 12,
+            },
+            {
+                type: 'cylinder',
+                center: [10, 10, -20],
+                radius: 10,
+                height: 10,
+                sides: 12,
+            },
+            
+            
         ]
     };
 
@@ -86,63 +116,41 @@ function animate(timestamp) {
 // Main drawing code - use information contained in variable `scene`
 function drawScene() {
 
+
     let canonicalViewMatrix;
     let projectionMatrix; 
 
+   // drawCube();
+
 
     if (scene.view.type == 'perspective') {
-        //console.log('perspective');
         canonicalViewMatrix = mat4x4Perspective(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip);
         projectionMatrix = mat4x4MPer();
-        //finalmatrix = mper.mult(nper);
-
     } else if (scene.view.type == 'parallel') {
-        //console.log('parallel');
         canonicalViewMatrix = mat4x4Parallel(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip);
         projectionMatrix = mat4x4MPar();
-        //finalmatrix = mpar.mult(npar);
-
     }
-
-    if (scene.models.type == 'generic') {
-        // draw generic
-    } else if (scene.models.type == 'cube') {
-        drawCube(scene.models.center, scene.models.width, scene.models.height, scene.models.depth);
-
-    } else if (scene.models.type == 'cone') {
-        
-    } else if (scene.models.type == 'cylinder') {
-
-    } else if (scene.models.type == 'sphere') {
-
-    }
-   
 
     // TODO: implement drawing here!
     
 
     let models = scene.models;
     
-    let finalpoints = [];
-
     // For each model, for each edge
     for (let i = 0; i < models.length; i ++) {
         // each model
-        let vertices = models[i].vertices;
-        let edges = models[i].edges;
+
+        console.log(models[i].type);
+
+        if (models[i].type == 'generic') {
+            //console.log("generic");
+            let vertices = models[i].vertices;
+            let edges = models[i].edges;
 
         //  * transform to canonical view volume (this is done, i believe)
         //  * clip in 3D (has to be done using the sutherland algo)
-        /*if (scene.view.type == 'perspective') {
-            console.log(edges[i]);
-            edges[i] = clipLinePerspective(edges[i]);
-        } else {
-            edges[i] = clipLineParallel(edges[i]);
-        }   */
-
         let verticesList = [];
         
-
         for (let i = 0; i < vertices.length; i ++) {
             verticesList.push(Matrix.multiply([canonicalViewMatrix, vertices[i]]));
         }
@@ -154,12 +162,6 @@ function drawScene() {
             // each set of edges
             for (let k = 0; k < edges[j].length-1; k++) {
                 // each individual vertice in the list of edges
-                /*if (k == edges[j].length-1) {
-                    drawLine(finalpoints[edges[j][edges[j].length-1]].x, finalpoints[edges[j][edges[j].length-1]].y, finalpoints[edges[j][0]].x, finalpoints[edges[j][0]].y);
-                } else {
-                    drawLine(finalpoints[edges[j][k]].x, finalpoints[edges[j][k]].y, finalpoints[edges[j][k+1]].x, finalpoints[edges[j][k+1]].y);
-
-                }*/
                 let p0 = verticesList[edges[j][k]];
                 let p1 = verticesList[edges[j][k+1]];
 
@@ -173,6 +175,73 @@ function drawScene() {
                     let p02d = Matrix.multiply([projectionMatrix, newLine.pt0]); // put V in here
                     let p12d = Matrix.multiply([projectionMatrix, newLine.pt1]); // put V in here
 
+                    p02d.x = p02d.x / p02d.w;
+                    p12d.x = p12d.x / p12d.w;
+                    p02d.y = p02d.y / p02d.w;
+                    p12d.y = p12d.y / p12d.w;
+                    drawLine((p02d.x + 1) * view.width/2, (p02d.y + 1) * view.height/2, (p12d.x + 1) * view.width/2, (p12d.y +1) * view.height/2);
+                }
+                
+                
+
+            }
+        }
+        } else if (models[i].type == 'cube') {
+            let vertices = [];
+            let edges = [];
+            let x = models[i].center[0];
+            let y = models[i].center[1];
+            let z = models[i].center[2];
+            halfheight = models[i].height/2;
+            halfwidth = models[i].width/2;
+            halfdepth = models[i].depth/2;
+
+            vertices.push(Vector4((x - halfwidth), (y - halfheight), (z - halfdepth), 1)); // 0
+            vertices.push(Vector4((x - halfwidth), (y - halfheight), (z + halfdepth), 1)); // 1
+            vertices.push(Vector4((x - halfwidth), (y + halfheight), (z - halfdepth), 1)); // 2
+            vertices.push(Vector4((x - halfwidth), (y + halfheight), (z + halfdepth), 1)); // 3
+            vertices.push(Vector4((x + halfwidth), (y - halfheight), (z - halfdepth), 1)); // 4
+            vertices.push(Vector4((x + halfwidth), (y - halfheight), (z + halfdepth), 1)); // 5
+            vertices.push(Vector4((x + halfwidth), (y + halfheight), (z - halfdepth), 1)); // 6
+            vertices.push(Vector4((x + halfwidth), (y + halfheight), (z + halfdepth), 1)); // 7
+
+            console.log(vertices);
+
+            edges.push([0,2,6,4,0]);
+            edges.push([1,3,7,5,1]);
+            edges.push([0,1]);
+            edges.push([2,3]);
+            edges.push([4,5]);
+            edges.push([6,7]);
+        
+        let verticesList = [];
+        
+        for (let i = 0; i < vertices.length; i ++) {
+            verticesList.push(Matrix.multiply([canonicalViewMatrix, vertices[i]]));
+        }
+
+        // clip here, then project to 2d
+
+
+        for (let j = 0; j < edges.length; j++) {
+            //console.log("hello");
+            // each set of edges
+            for (let k = 0; k < edges[j].length-1; k++) {
+                //console.log("hello");
+                // each individual vertice in the list of edges
+                let p0 = verticesList[edges[j][k]];
+                let p1 = verticesList[edges[j][k+1]];
+
+                let line = {pt0: p0, pt1: p1};
+                let newLine = line;
+
+                // todo add clipping here
+                //newLine = clipLinePerspective(line, -1*(scene.view.clip[4]/scene.view.clip[5]));
+                //newLine = clipLineParallel(line);
+                if (newLine != null) {
+                    //console.log("hello");
+                    let p02d = Matrix.multiply([projectionMatrix, newLine.pt0]); // put V in here
+                    let p12d = Matrix.multiply([projectionMatrix, newLine.pt1]); // put V in here
 
                     p02d.x = p02d.x / p02d.w;
                     p12d.x = p12d.x / p12d.w;
@@ -186,65 +255,354 @@ function drawScene() {
             }
         }
 
-        //  * project to 2D (hard coded currently to fit on the screen)
-        /*for (let i = 0; i < vertices.length; i ++) {
-            let product = finalmatrix.mult(vertices[i]);
-            let final = [(product.values[0] / product.values[3]), (product.values[1] / product.values[3])];
-            let finalpoint = {x: (final[0] * (view.width/2) + view.width/2), y: (final[1] * (view.height/2) + view.height/2)}; // hard coded extra values to make it easier to see for now
-            finalpoints.push(finalpoint);
-        }
-        //  * draw line
-        for (let j = 0; j < edges.length; j++) {
-            // each set of edges
-            for (let k = 0; k < edges[j].length; k++) {
-                // each individual vertice in the list of edges
-                if (k == edges[j].length-1) {
-                    drawLine(finalpoints[edges[j][edges[j].length-1]].x, finalpoints[edges[j][edges[j].length-1]].y, finalpoints[edges[j][0]].x, finalpoints[edges[j][0]].y);
-                } else {
-                    drawLine(finalpoints[edges[j][k]].x, finalpoints[edges[j][k]].y, finalpoints[edges[j][k+1]].x, finalpoints[edges[j][k+1]].y);
+        } else if (models[i].type == 'cone') {
+
+
+            let cone = models[i];
+
+            let vertices = [];
+            let edges = [];
+            let x = cone.center[0];
+            let y = cone.center[1];
+            let z = cone.center[2];
+            let height = cone.height;
+            let radius = cone.radius;
+            let sides = cone.sides;
+
+            for (let i = 0; i < sides; i++) {
+                let angle = (i / sides) * (2 * Math.PI);
+                let newx = x + radius * Math.cos(angle);
+                let newy = y + radius * Math.sin(angle);
+                vertices.push(Vector4(newx, newy, z + radius, 1));
+                
+                if (i < sides - 1) {
+                    edges.push([i, i+1]);
+                } else if (i == sides - 1) {
+                    edges.push([i, 0]);
 
                 }
+                
             }
-        }*/
+            vertices.push(Vector4(cone.center[0], (cone.center[1]), cone.center[2]+height, 1));
+
+
+            for (let i = 0; i < sides; i++) {
+                edges.push([i, sides]);
+            }
+            edges.push([0,sides]);
+
+            let verticesList = [];
+        
+        for (let i = 0; i < vertices.length; i ++) {
+            verticesList.push(Matrix.multiply([canonicalViewMatrix, vertices[i]]));
+        }
+
+        // clip here, then project to 2d
+
+
+        for (let j = 0; j < edges.length; j++) {
+            // each set of edges
+            for (let k = 0; k < edges[j].length-1; k++) {
+                //console.log(edges[j]);
+                // each individual vertice in the list of edges
+                let p0 = verticesList[edges[j][k]];
+                let p1 = verticesList[edges[j][k+1]];
+
+                let line = {pt0: p0, pt1: p1};
+                let newLine = line;
+
+                // todo add clipping here
+                //newLine = clipLinePerspective(line, -1*(scene.view.clip[4]/scene.view.clip[5]));
+                //newLine = clipLineParallel(line);
+                if (newLine != null) {
+                    //console.log("hello");
+                    let p02d = Matrix.multiply([projectionMatrix, newLine.pt0]); // put V in here
+                    let p12d = Matrix.multiply([projectionMatrix, newLine.pt1]); // put V in here
+                    //console.log("K = " + k + " " + newLine);
+
+                    p02d.x = p02d.x / p02d.w;
+                    p12d.x = p12d.x / p12d.w;
+                    p02d.y = p02d.y / p02d.w;
+                    p12d.y = p12d.y / p12d.w;
+                    drawLine((p02d.x + 1) * view.width/2, (p02d.y + 1) * view.height/2, (p12d.x + 1) * view.width/2, (p12d.y +1) * view.height/2);
+                }
+                
+                
+
+            }
+        }
+
+            
+
+
+
+        } else if (models[i].type == "cylinder") {
+            let cylinder = models[i];
+
+            //console.log(cone);
+
+            let vertices = [];
+            let edges = [];
+            let x = cylinder.center[0];
+            let y = cylinder.center[1];
+            let z = cylinder.center[2];
+            let height = cylinder.height;
+            let radius = cylinder.radius;
+            let sides = cylinder.sides * 2;
+
+            for (let i = 0; i < sides/2; i++) {
+                let angle = (i / (sides/2)) * (2 * Math.PI);
+                let newx = x + radius * Math.cos(angle);
+                let newy = y + radius * Math.sin(angle);
+                vertices.push(Vector4(newx, newy, z + height, 1));
+                
+                if (i < sides/2 - 1) {
+                    edges.push([i, i+1]);
+                } else if (i == sides/2 - 1) {
+                    edges.push([i, 0]);
+
+                }
+                
+            }
+            
+           
+
+            for (let i = sides/2; i < sides; i++) {
+                let angle = (i / (sides/2)) * (2 * Math.PI);
+                let newx = x + radius * Math.cos(angle);
+                let newy = y + radius * Math.sin(angle);
+                vertices.push(Vector4(newx, newy, z - height, 1));
+
+                
+                if (i < sides - 1) {
+                    edges.push([i, i+1]);
+                } else if (i == sides - 1) {
+                    edges.push([i, sides/2]);
+
+                }
+                
+            }
+
+            for (let i = 0; i < sides; i++) {
+                if (i < sides - 1) {
+                    edges.push([i, i+(sides/2)]);
+                } else if (i == sides - 1) {
+                    edges.push(i, sides);
+                }
+            }
+            
+           
+
+            let verticesList = [];
+        
+        for (let i = 0; i < vertices.length; i ++) {
+            verticesList.push(Matrix.multiply([canonicalViewMatrix, vertices[i]]));
+        }
+
+        // clip here, then project to 2d
+
+
+        for (let j = 0; j < edges.length; j++) {
+            // each set of edges
+            for (let k = 0; k < edges[j].length-1; k++) {
+                //console.log(edges[j]);
+                // each individual vertice in the list of edges
+                let p0 = verticesList[edges[j][k]];
+                let p1 = verticesList[edges[j][k+1]];
+
+                let line = {pt0: p0, pt1: p1};
+                let newLine = line;
+
+                // todo add clipping here
+                //newLine = clipLinePerspective(line, -1*(scene.view.clip[4]/scene.view.clip[5]));
+                //newLine = clipLineParallel(line);
+                if (newLine != null) {
+                    //console.log("hello");
+                    let p02d = Matrix.multiply([projectionMatrix, newLine.pt0]); // put V in here
+                    let p12d = Matrix.multiply([projectionMatrix, newLine.pt1]); // put V in here
+                    //console.log("K = " + k + " " + newLine);
+
+                    p02d.x = p02d.x / p02d.w;
+                    p12d.x = p12d.x / p12d.w;
+                    p02d.y = p02d.y / p02d.w;
+                    p12d.y = p12d.y / p12d.w;
+                    drawLine((p02d.x + 1) * view.width/2, (p02d.y + 1) * view.height/2, (p12d.x + 1) * view.width/2, (p12d.y +1) * view.height/2);
+                }
+                
+                
+
+            }
+        }
+        } else if (models[i].type == "sphere") {
+            let sphere = models[i];
+
+
+            let vertices = [];
+            let edges = [];
+            let x = sphere.center[0];
+            let y = sphere.center[1];
+            let z = sphere.center[2];
+            let radius = sphere.radius;
+            let slices = sphere.slices;
+            let stacks = sphere.stacks;
+            let sides = 12;
+
+
+
+
+            xmatrix = new Matrix(4,4);
+            xmatrix.values = [[1, 0, 0, 0],
+                                [0, Math.cos(90), -Math.sin(90), 0],
+                                [0, Math.sin(90), Math.cos(90), 0],
+                                [0, 0, 0, 1]]; 
+
+            ymatrix = new Matrix(4,4);
+            ymatrix.values = [[Math.cos(90), 0, Math.sin(90), 0],
+                                [0, 1, 0, 0],
+                                [-Math.sin(90), 0, Math.cos(90), 0],
+                                [0, 0, 0, 1]]; 
+
+            let temp = Matrix.multiply([ymatrix, xmatrix]);
+
+
+            let secondradius = radius;
+            
+
+            for (let j = slices/2; j < slices; j++) {
+                secondradius = secondradius * (.9);
+                for (i = 0; i < sides; i++) {
+                    let angle = (i / (sides)) * (2 * Math.PI);
+                    let newx = x + (secondradius) * Math.cos(angle);
+                    let newy = y + (secondradius) * Math.sin(angle);
+                    let newz = z - j;
+                    vertices.push(Vector4(newx, newy, newz, 1));                    
+                    if (i < sides - 1) {
+                        edges.push([i + (j * sides), (i + (j * sides)) + 1]);
+                    } else if (i == sides - 1) {
+                        edges.push([i + (j * sides), 0 + (j * sides)]);
+                    }
+                }
+
+            }
+
+            let firstradius = secondradius;
+
+            for (let j = 0; j < slices/2; j++) {
+                firstradius = firstradius * (10/9);
+                for (i = 0; i < sides; i++) {
+                    let angle = (i / (sides)) * (2 * Math.PI);
+                    let newx = x + (firstradius) * Math.cos(angle);
+                    let newy = y + (firstradius) * Math.sin(angle);
+                    let newz = z - j;
+                    vertices.push(Vector4(newx, newy, newz, 1));
+                    if (i < sides - 1) {
+                        edges.push([i + (j * sides), (i + (j * sides)) + 1]);
+                    } else if (i == sides - 1) {
+                        edges.push([i + (j * sides), 0 + (j * sides)]);
+                    }
+                        
+                }
+                
+            }
+
+            let fourthradius = radius;
+
+            for (let j = stacks/2; j < stacks; j++) {
+                fourthradius = fourthradius * (.9);
+                for (i = 0; i < sides; i++) {
+                    let angle = (i / (sides)) * (2 * Math.PI);
+                    let newx = x + (fourthradius) * Math.cos(angle);
+                    let newy = y + (fourthradius) * Math.sin(angle);
+                    let newz = z - j;
+                    vertices.push(Matrix.multiply([temp, Vector4(newx, newy, newz, 1)]));                    
+                    if (i < sides - 1) {
+                        edges.push([i + (j * sides), (i + (j * sides)) + 1]);
+                    } else if (i == sides - 1) {
+                        edges.push([i + (j * sides), 0 + (j * sides)]);
+                    }
+                }
+
+            }
+
+            let thirdradius = fourthradius;
+
+            for (let j = 0; j < stacks/2; j++) {
+                thirdradius = thirdradius * (10/9);
+                for (i = 0; i < sides; i++) {
+                    let angle = (i / (sides)) * (2 * Math.PI);
+                    let newx = x + (thirdradius) * Math.cos(angle);
+                    let newy = y + (thirdradius) * Math.sin(angle);
+                    let newz = z - j;
+                    vertices.push(Matrix.multiply([temp, Vector4(newx, newy, newz, 1)]));
+                    
+                    if (i < sides - 1) {
+                        edges.push([i + (j * sides), (i + (j * sides)) + 1]);
+                    } else if (i == sides - 1) {
+                        edges.push([i + (j * sides), 0 + (j * sides)]);
+                    }
+                        
+                }
+                
+            }
+
+            
+
+         
+            console.log(vertices);
+            console.log(edges);
+            
+            
+            
+            
+            let verticesList = [];
+        
+        for (let i = 0; i < vertices.length; i ++) {
+            verticesList.push(Matrix.multiply([canonicalViewMatrix, vertices[i]]));
+        }
+
+        // clip here, then project to 2d
+
+
+        for (let j = 0; j < edges.length; j++) {
+            // each set of edges
+            for (let k = 0; k < edges[j].length-1; k++) {
+                //console.log(edges[j]);
+                // each individual vertice in the list of edges
+                let p0 = verticesList[edges[j][k]];
+                let p1 = verticesList[edges[j][k+1]];
+
+                let line = {pt0: p0, pt1: p1};
+                let newLine = line;
+
+                // todo add clipping here
+                //newLine = clipLinePerspective(line, -1*(scene.view.clip[4]/scene.view.clip[5]));
+                //newLine = clipLineParallel(line);
+                if (newLine != null) {
+                    //console.log("hello");
+                    let p02d = Matrix.multiply([projectionMatrix, newLine.pt0]); // put V in here
+                    let p12d = Matrix.multiply([projectionMatrix, newLine.pt1]); // put V in here
+                    //console.log("K = " + k + " " + newLine);
+
+                    p02d.x = p02d.x / p02d.w;
+                    p12d.x = p12d.x / p12d.w;
+                    p02d.y = p02d.y / p02d.w;
+                    p12d.y = p12d.y / p12d.w;
+                    drawLine((p02d.x + 1) * view.width/2, (p02d.y + 1) * view.height/2, (p12d.x + 1) * view.width/2, (p12d.y +1) * view.height/2);
+                }
+                
+                
+
+            }
+        }
+        }
+        
+
     }
 
 
     
     
 }
-// function to set edges, vertices for a cube model
-function drawCube(center, width, height, depth) {
-
-    let vertices = [];
-    let edges = [];
-    let x = center[0];
-    let y = center[1];
-    let z = center[2];
-    halfheight = height/2;
-    halfwidth = width/2;
-    halfdepth = depth/2;
-
-    vertices.push(Vector4((x - halfwidth), (y - halfheight), (z - halfdepth))); // not quite right way to subtract, i think?
-    vertices.push(Vector4((x - halfwidth), (y - halfheight), (z + halfdepth)));
-    vertices.push(Vector4((x - halfwidth), (y + halfheight), (z - halfdepth)));
-    vertices.push(Vector4((x - halfwidth), (y + halfheight), (z + halfdepth)));
-    vertices.push(Vector4((x + halfwidth), (y - halfheight), (z - halfdepth)));
-    vertices.push(Vector4((x + halfwidth), (y - halfheight), (z + halfdepth)));
-    vertices.push(Vector4((x + halfwidth), (y + halfheight), (z - halfdepth)));
-    vertices.push(Vector4((x + halfwidth), (y + halfheight), (z + halfdepth)));
-
-    edges.push([0, 1, 2, 3]);
-    edges.push([4, 5, 6, 7]);
-    edges.push([0, 4]);
-    edges.push([3, 7]);
-    edges.push([1, 5]);
-    edges.push([2, 6]);
-
-    drawScene(); // need helper function?
-
-}
-
-
 
 
 // Get outcode for vertex (parallel view volume)
@@ -307,14 +665,14 @@ function clipLineParallel(line) {
 
     if (out0 == 0 && out1 == 0) {
         // trivial accept, entire edge is inside of bounds, no clipping needed
-        console.log("clipping if");
+        //console.log("clipping if");
         return result;
     } else if ((out0 & out1) != 0) {
         // trivial deny, entire edge is outside of bounds, no clipping needed
-        console.log("clipping else if");
+        //console.log("clipping else if");
         return null;
     } else if ((out0 & out1) == 0 && out0 == 0 || out1 == 0) {
-        console.log("clipping else");
+        //console.log("clipping else");
         // need to clip
         if (out0 != 0) {
             if (out0 & LEFT) {
@@ -445,14 +803,14 @@ function clipLinePerspective(line, z_min) {
 
     if (out0 == 0 && out1 == 0) {
         // trivial accept, entire edge is inside of bounds, no clipping needed
-        console.log("clipping if");
+       // console.log("clipping if");
         return result;
     } else if ((out0 & out1) != 0) {
         // trivial deny, entire edge is outside of bounds, no clipping needed
-        console.log("clipping else if");
+        //console.log("clipping else if");
         return null;
     } else if ((out0 & out1) == 0 && out0 == 0 || out1 == 0) {
-        console.log("clipping else");
+        //console.log("clipping else");
         // need to clip
         if (out0 != 0) {
             if (out0 & LEFT) {
